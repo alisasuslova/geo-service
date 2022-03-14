@@ -1,42 +1,40 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import ru.netology.entity.Country;
 import ru.netology.entity.Location;
 import ru.netology.geo.GeoService;
+import ru.netology.geo.GeoServiceImpl;
 import ru.netology.i18n.LocalizationService;
-import ru.netology.sender.MessageSender;
+import ru.netology.i18n.LocalizationServiceImpl;
 import ru.netology.sender.MessageSenderImpl;
-
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-
-import static ru.netology.entity.Country.RUSSIA;
-import static ru.netology.geo.GeoServiceImpl.MOSCOW_IP;
 
 public class MessageSenderMock {
 
     @Test
     public void testSend() {
-        GeoService geoService = Mockito.mock(GeoService.class);
-        Mockito.when(geoService.byIp(MOSCOW_IP))
-                .thenReturn(new Location("Moscow", RUSSIA, "Lenina", 15));
 
+        GeoService geoService = Mockito.mock(GeoServiceImpl.class);
 
-        LocalizationService localizationService = Mockito.mock(LocalizationService.class);
-        Mockito.when(geoService.byIp(MOSCOW_IP).getCountry())
-                .thenReturn(localizationService.locale(geoService.byIp(MOSCOW_IP).getCountry()));
+        Mockito.when(geoService.byIp(Mockito.startsWith("172.")))
+                .thenReturn(new Location("Moscow", Country.RUSSIA, null, 0));
 
-        MessageSenderImpl messageSenderImpl = new MessageSenderImpl(geoService, localizationService);
+        LocalizationService localizationService = Mockito.mock(LocalizationServiceImpl.class);
+        Mockito.when(localizationService.locale(Country.RUSSIA))
+                .thenReturn("Добро пожаловать");
+        Mockito.when(localizationService.locale(Country.USA))
+                .thenReturn("Welcome");
 
-        Map <String, String> map =  new HashMap<>();
-        map.put(MOSCOW_IP, "Добро пожаловать");
+        Map <String, String> map = new HashMap<>();
+        MessageSenderImpl messageSender = new MessageSenderImpl(geoService, localizationService);
+        map.put(MessageSenderImpl.IP_ADDRESS_HEADER, "172.44.183.149");
 
         String expected = "Добро пожаловать";
-        String result = messageSenderImpl.send(map);
+        String result = messageSender.send(map);
 
         Assertions.assertEquals(expected, result);
-
     }
 
 }
